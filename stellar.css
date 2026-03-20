@@ -237,7 +237,7 @@
 .stlr-bubble-assistant ol ul,
 .stlr-bubble-assistant li ul { padding-left: 18px !important; margin: 2px 0 4px !important; }
 .stlr-bubble-assistant ol ul li,
-.stlr-bubble-assistant li ul li { font-size: 13px !important; margin: 2px 0 !important; color: #4b5563 !important; }
+.stlr-bubble-assistant li ul li { font-size: 14px !important; margin: 2px 0 !important; color: #374151 !important; }
 .stlr-bubble-assistant ol ul li::marker { color: #4d9fa7 !important; font-size: 14px !important; }
 .stlr-bubble-assistant br { display: block !important; margin: 2px 0 !important; content: "" !important; }
 
