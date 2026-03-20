@@ -179,10 +179,18 @@
 .stlr-bubble-assistant h3:first-child,
 .stlr-bubble-assistant h4:first-child { margin-top: 0 !important; }
 .stlr-bubble-assistant ul,
-.stlr-bubble-assistant ol { padding-left: 20px !important; margin: 8px 0 !important; color: #374151 !important; list-style-position: outside !important; }
+.stlr-bubble-assistant ol { padding-left: 22px !important; margin: 6px 0 !important; color: #374151 !important; list-style-position: outside !important; }
 .stlr-bubble-assistant ul { list-style-type: disc !important; }
 .stlr-bubble-assistant ol { list-style-type: decimal !important; }
-.stlr-bubble-assistant li { margin: 4px 0 !important; }
+.stlr-bubble-assistant li { margin: 3px 0 !important; padding-left: 2px !important; }
+.stlr-bubble-assistant li::marker { color: #007580 !important; font-weight: 700 !important; }
+.stlr-bubble-assistant ol > li::marker { color: #007580 !important; font-weight: 600 !important; }
+/* Nested sub-lists under OL items */
+.stlr-bubble-assistant ol ul,
+.stlr-bubble-assistant li ul { padding-left: 18px !important; margin: 2px 0 4px !important; }
+.stlr-bubble-assistant ol ul li,
+.stlr-bubble-assistant li ul li { font-size: 13px !important; margin: 2px 0 !important; color: #4b5563 !important; }
+.stlr-bubble-assistant ol ul li::marker { color: #4d9fa7 !important; font-size: 14px !important; }
 .stlr-bubble-assistant br { display: block !important; margin: 2px 0 !important; content: "" !important; }
 
 /* Smooth cursor blink while streaming */

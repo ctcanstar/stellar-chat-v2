@@ -203,26 +203,29 @@
       var line = lines[i];
       var olMatch = line.match(/^(\d+)\. (.+)/);
       var ulMatch = line.match(/^[-*] (.+)/);
-      var subUlMatch = line.match(/^\s+[-*] (.+)/);
+      var subUlMatch = line.match(/^\s+[-*·•] (.+)/);
       var headerMatch = line.match(/^(#{1,3}) (.+)/);
 
       if (olMatch) {
-        // Close sub-UL if open
-        if (inSubUl) { out.push("</ul>"); inSubUl = false; }
-        // Close UL if open (shouldn't happen but be safe)
+        // Close sub-UL + parent LI if open
+        if (inSubUl) { out.push("</ul></li>"); inSubUl = false; }
+        else if (inOl) { /* previous li already closed */ }
+        // Close UL if open
         if (inUl) { out.push("</ul>"); inUl = false; }
         // Open OL if not already open
         if (!inOl) { out.push("<ol>"); inOl = true; }
-        out.push("<li>" + olMatch[2] + "</li>");
-      } else if (subUlMatch && inOl) {
-        // Sub-bullet under an ordered list item
+        // Leave <li> open so sub-bullets can nest inside
+        out.push("<li>" + olMatch[2]);
+      } else if (subUlMatch && (inOl || inUl)) {
+        // Sub-bullet under an ordered/unordered list item
         if (!inSubUl) { out.push("<ul>"); inSubUl = true; }
         out.push("<li>" + subUlMatch[1] + "</li>");
       } else if (ulMatch && !inOl) {
         // Top-level unordered list (not inside an OL context)
-        if (inSubUl) { out.push("</ul>"); inSubUl = false; }
+        if (inSubUl) { out.push("</ul></li>"); inSubUl = false; }
         if (!inUl) { out.push("<ul>"); inUl = true; }
-        out.push("<li>" + ulMatch[1] + "</li>");
+        // Leave <li> open for potential sub-bullets
+        out.push("<li>" + ulMatch[1]);
       } else if (ulMatch && inOl) {
         // Bullet that looks top-level but we're in an OL — treat as sub-bullet
         if (!inSubUl) { out.push("<ul>"); inSubUl = true; }
@@ -230,8 +233,9 @@
       } else {
         // Skip blank lines inside lists (Claude often inserts them between items)
         if (line.trim() === "" && (inOl || inUl)) { continue; }
-        // Close any open lists
-        if (inSubUl) { out.push("</ul>"); inSubUl = false; }
+        // Close any open lists (close nested sub-UL + parent LI first)
+        if (inSubUl) { out.push("</ul></li>"); inSubUl = false; }
+        else if (inOl || inUl) { out.push("</li>"); }
         if (inOl) { out.push("</ol>"); inOl = false; }
         if (inUl) { out.push("</ul>"); inUl = false; }
 
@@ -248,7 +252,8 @@
     }
 
     // Close any remaining open lists
-    if (inSubUl) out.push("</ul>");
+    if (inSubUl) out.push("</ul></li>");
+    else if (inOl || inUl) out.push("</li>");
     if (inOl) out.push("</ol>");
     if (inUl) out.push("</ul>");
 
