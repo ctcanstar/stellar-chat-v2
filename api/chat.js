@@ -1,7 +1,6 @@
 const { GoogleGenAI } = require("@google/genai");
 
-// We'll use 2.5 Flash as the standard equivalent, but you can change this to 'gemini-2.5-pro' if you need heavier reasoning.
-const MODEL = "gemini-2.5-flash"; 
+const MODEL = "gemini-3.0-flash";
 const MAX_MESSAGES = 50;
 const MAX_PRODUCT_DATA_LENGTH = 50000;
 
