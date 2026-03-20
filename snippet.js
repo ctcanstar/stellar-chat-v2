@@ -4,7 +4,7 @@
   // ============================================================
   // CONFIGURATION
   // ============================================================
-  var API_URL = "https://stellar-optimizely.vercel.app/api/chat";
+  var API_URL = "https://stellar-chat-v2.vercel.app/api/chat";
 
   // Prevent double-injection of the entire IIFE
   if (window.__stellarInjected) return;
