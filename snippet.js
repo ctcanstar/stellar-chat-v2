@@ -1112,31 +1112,45 @@
   };
 
   // ---- Smooth typing drain ----
+  // Uses a single RAF loop that:
+  //  1. Drains chars from pending buffer at a steady rate
+  //  2. Throttles DOM (innerHTML) updates to ~50ms intervals
+  //  3. Lerps scroll position smoothly instead of snapping
   StellarChat.prototype._startDrain = function () {
     var self = this;
     if (this._drainTimer) return;
+
+    this._lastRenderTime = 0;
+    this._renderInterval = 50; // ms between DOM updates
+    this._dirty = false;
+
     this._drainTimer = setInterval(function () {
       if (!self._pendingText) return;
 
-      // Drain a few characters per tick, but snap to word boundaries
-      // to avoid splitting mid-markdown-token
+      // Drain characters — speed up if buffer is growing
       var chars = self._drainRate;
-      // If buffer is getting large, speed up to prevent lag
       if (self._pendingText.length > 80) chars = 8;
       if (self._pendingText.length > 200) chars = 20;
 
       var slice = self._pendingText.slice(0, chars);
       self._pendingText = self._pendingText.slice(chars);
       self._displayedText += slice;
+      self._dirty = true;
 
-      self.updateMessage(self._drainMsgId, self._displayedText);
+      // Throttle DOM updates to every ~50ms
+      var now = Date.now();
+      if (now - self._lastRenderTime >= self._renderInterval) {
+        self._lastRenderTime = now;
+        self._dirty = false;
+        self.updateMessage(self._drainMsgId, self._displayedText);
 
-      if (self._streamingBubble) {
-        self._streamingBubble.innerHTML = renderMarkdown(self._displayedText);
-      } else if (self.messagesEl) {
-        self.renderMessages(self.messagesEl);
+        if (self._streamingBubble) {
+          self._streamingBubble.innerHTML = renderMarkdown(self._displayedText);
+        } else if (self.messagesEl) {
+          self.renderMessages(self.messagesEl);
+        }
+        self._smoothScroll();
       }
-      self.scrollToBottom();
     }, this._drainInterval);
   };
 
@@ -1145,15 +1159,46 @@
       clearInterval(this._drainTimer);
       this._drainTimer = null;
     }
+    if (this._scrollAnimRAF) {
+      cancelAnimationFrame(this._scrollAnimRAF);
+      this._scrollAnimRAF = null;
+    }
   };
 
   StellarChat.prototype._flushDrain = function () {
     this._stopDrain();
-    if (this._pendingText) {
+    if (this._pendingText || this._dirty) {
       this._displayedText += this._pendingText;
       this._pendingText = "";
+      this._dirty = false;
       this.updateMessage(this._drainMsgId, this._displayedText);
     }
+  };
+
+  // Smooth scroll: lerp toward target over several frames
+  StellarChat.prototype._smoothScroll = function () {
+    var self = this;
+    if (self._scrollAnimRAF) return; // already animating
+
+    function step() {
+      self._scrollAnimRAF = null;
+      if (!self.messagesEl) return;
+
+      var target = self.messagesEl.scrollHeight - self.messagesEl.clientHeight;
+      var current = self.messagesEl.scrollTop;
+      var diff = target - current;
+
+      if (diff < 1) {
+        self.messagesEl.scrollTop = target;
+        return;
+      }
+
+      // Lerp 25% of remaining distance each frame — fast but smooth
+      self.messagesEl.scrollTop = current + diff * 0.25;
+      self._scrollAnimRAF = requestAnimationFrame(step);
+    }
+
+    self._scrollAnimRAF = requestAnimationFrame(step);
   };
 
   StellarChat.prototype.updateMessage = function (id, content) {
@@ -1171,7 +1216,14 @@
     self._scrollRAF = requestAnimationFrame(function () {
       self._scrollRAF = null;
       if (self.messagesEl) {
-        self.messagesEl.scrollTop = self.messagesEl.scrollHeight;
+        var target = self.messagesEl.scrollHeight - self.messagesEl.clientHeight;
+        var current = self.messagesEl.scrollTop;
+        // Snap if close or first render; otherwise smooth
+        if (target - current < 60) {
+          self.messagesEl.scrollTop = target;
+        } else {
+          self.messagesEl.scrollTo({ top: target, behavior: "smooth" });
+        }
       }
     });
   };

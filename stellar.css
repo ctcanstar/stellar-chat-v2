@@ -136,6 +136,8 @@
   flex: 1 !important;
   overflow-y: auto !important;
   padding: 16px !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior: contain !important;
 }
 
 /* Message bubbles */
