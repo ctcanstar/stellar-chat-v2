@@ -18,6 +18,32 @@ function getClient(apiKey) {
   return geminiClient;
 }
 
+// ============================================================
+// SUPABASE LOGGING (fire-and-forget)
+// ============================================================
+function logToSupabase(userMessage, messageCount, userAgent) {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_ANON_KEY;
+  if (!url || !key) return;
+
+  fetch(`${url}/rest/v1/stellar_logs`, {
+    method: "POST",
+    headers: {
+      apikey: key,
+      Authorization: `Bearer ${key}`,
+      "Content-Type": "application/json",
+      Prefer: "return=minimal",
+    },
+    body: JSON.stringify({
+      prompt: userMessage,
+      message_count: messageCount,
+      user_agent: userAgent,
+    }),
+  }).catch((err) => {
+    console.error("[Stellar Logging] Supabase error:", err.message);
+  });
+}
+
 function buildSystemPrompt(productData) {
   return `You are Stellar, Canstar's comparison assistant. You help users compare health insurance policies displayed on this page.
 
@@ -98,9 +124,10 @@ module.exports = async function handler(req, res) {
       return;
     }
 
-    // --- Logging (Vercel function logs) ---
+    // --- Logging ---
     const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
     const userPrompt = lastUserMsg ? String(lastUserMsg.content || "").slice(0, 500) : "(none)";
+    const userAgent = req.headers["user-agent"] || "";
 
     console.log(
       "[Stellar]",
@@ -108,6 +135,9 @@ module.exports = async function handler(req, res) {
       `| msgs: ${messages.length}`,
       `| prompt: ${userPrompt}`
     );
+
+    // Fire-and-forget to Supabase (non-blocking)
+    logToSupabase(userPrompt, messages.length, userAgent);
 
     const ai = getClient(apiKey);
 
