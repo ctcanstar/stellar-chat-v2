@@ -98,6 +98,17 @@ module.exports = async function handler(req, res) {
       return;
     }
 
+    // --- Logging (Vercel function logs) ---
+    const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
+    const userPrompt = lastUserMsg ? String(lastUserMsg.content || "").slice(0, 500) : "(none)";
+
+    console.log(
+      "[Stellar]",
+      new Date().toISOString(),
+      `| msgs: ${messages.length}`,
+      `| prompt: ${userPrompt}`
+    );
+
     const ai = getClient(apiKey);
 
     // Map Claude's message format to Gemini's format
