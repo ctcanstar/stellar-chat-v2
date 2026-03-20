@@ -1040,6 +1040,8 @@
         return { role: m.role, content: m.content };
       });
 
+    console.log("[Stellar] Sending request to", API_URL, "with", apiMessages.length, "messages");
+
     fetch(API_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1049,7 +1051,8 @@
       }),
     })
       .then(function (response) {
-        if (!response.ok) throw new Error("API request failed");
+        console.log("[Stellar] Response status:", response.status);
+        if (!response.ok) throw new Error("API " + response.status + ": " + response.statusText);
         var reader = response.body.getReader();
         var decoder = new TextDecoder();
         var accumulated = "";
@@ -1057,9 +1060,17 @@
         function read() {
           return reader.read().then(function (result) {
             if (result.done) {
+              console.log("[Stellar] Stream complete. Accumulated length:", accumulated.length);
               // Flush any remaining buffered text immediately
               self._flushDrain();
               self.isLoading = false;
+
+              // If nothing was received, show a fallback message
+              if (!accumulated.trim()) {
+                console.warn("[Stellar] Empty response from API");
+                self.updateMessage(assistantId, "I didn't receive a response. Please try asking again.");
+              }
+
               self._completeStream();
               return;
             }
@@ -1081,21 +1092,21 @@
                   self._pendingText += parsed.text;
                 }
                 if (parsed.error) {
-                  // NEW RATE LIMIT ERROR HANDLING HERE
-                  if (parsed.error === "rate_limit") {
-                    self.updateMessage(
-                      assistantId, 
-                      "**Stellar is currently helping a lot of customers and is a bit busy right now!** \n\nPlease wait a moment and try asking your question again."
-                    );
-                  } else {
-                    self.updateMessage(
-                      assistantId, 
-                      "Sorry, I encountered an unexpected error. Please try again."
-                    );
-                  }
+                  console.error("[Stellar] API error:", parsed.error);
+                  // Stop the drain so it doesn't overwrite the error message
+                  self._stopDrain();
+                  self.isLoading = false;
+
+                  var errorMsg = parsed.error === "rate_limit"
+                    ? "**Stellar is currently helping a lot of customers and is a bit busy right now!** \n\nPlease wait a moment and try asking your question again."
+                    : "Sorry, I encountered an unexpected error. Please try again.";
+
+                  self.updateMessage(assistantId, errorMsg);
+                  self.renderPanel();
+                  return; // stop reading further chunks
                 }
               } catch (e) {
-                // skip malformed JSON
+                console.warn("[Stellar] Malformed SSE data:", data, e);
               }
             }
 
@@ -1105,7 +1116,8 @@
 
         return read();
       })
-      .catch(function () {
+      .catch(function (err) {
+        console.error("[Stellar] Fetch error:", err);
         self._stopDrain();
         self.updateMessage(assistantId, "Sorry, I couldn't connect to the assistant. Please try again.");
         self.isLoading = false;
