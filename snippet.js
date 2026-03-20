@@ -1057,8 +1057,7 @@
               // Flush any remaining buffered text immediately
               self._flushDrain();
               self.isLoading = false;
-              self._streamingBubble = null;
-              self.renderPanel();
+              self._completeStream();
               return;
             }
 
@@ -1172,6 +1171,68 @@
       this._pendingText = "";
       this._dirty = false;
       this.updateMessage(this._drainMsgId, this._displayedText);
+    }
+  };
+
+  // ---- Lightweight stream completion (avoids full re-render flash) ----
+  StellarChat.prototype._completeStream = function () {
+    var bubble = this._streamingBubble;
+
+    // 1. Final markdown render on the existing bubble
+    if (bubble) {
+      bubble.innerHTML = renderMarkdown(this._displayedText);
+      bubble.classList.remove("stlr-streaming");
+    }
+    this._streamingBubble = null;
+
+    // 2. Remove loading dots if present
+    if (this.messagesEl) {
+      var loadingEl = this.messagesEl.querySelector(".stlr-loading");
+      if (loadingEl) loadingEl.remove();
+
+      // 3. Add "Ask another question" link
+      if (this.messages.length > 2) {
+        var self = this;
+        var askAgain = document.createElement("div");
+        askAgain.className = "stlr-ask-again";
+        var askBtn = document.createElement("button");
+        askBtn.textContent = "\u2190 Ask another question";
+        askBtn.onclick = function () {
+          self.showChipsOverride = true;
+          self.renderMessages(self.messagesEl);
+          self.scrollToBottom();
+        };
+        askAgain.appendChild(askBtn);
+        this.messagesEl.appendChild(askAgain);
+      }
+    }
+
+    // 4. Re-enable input
+    if (this.inputEl) {
+      this.inputEl.disabled = false;
+      this.inputEl.placeholder = "Ask about these policies...";
+      this.inputEl.focus();
+    }
+    var sendBtn = this.root && this.root.querySelector(".stlr-send");
+    if (sendBtn) sendBtn.disabled = false;
+
+    // 5. Scroll to show the TOP of the response bubble, not the bottom
+    if (bubble && this.messagesEl) {
+      var self = this;
+      requestAnimationFrame(function () {
+        var bubbleTop = bubble.parentElement.offsetTop;
+        var containerTop = self.messagesEl.scrollTop;
+        var headerOffset = 8; // small breathing room at top
+        var target = bubbleTop - headerOffset;
+
+        // Only scroll up if the response top is above the current viewport
+        // or smoothly scroll to show it
+        var current = self.messagesEl.scrollTop;
+        var diff = Math.abs(target - current);
+        if (diff > 30) {
+          self.messagesEl.scrollTo({ top: target, behavior: "smooth" });
+        }
+      });
     }
   };
 
