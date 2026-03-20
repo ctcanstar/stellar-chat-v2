@@ -1216,20 +1216,18 @@
     var sendBtn = this.root && this.root.querySelector(".stlr-send");
     if (sendBtn) sendBtn.disabled = false;
 
-    // 5. Scroll to show the TOP of the response bubble, not the bottom
+    // 5. Scroll to show the user's question + start of response
     if (bubble && this.messagesEl) {
       var self = this;
       requestAnimationFrame(function () {
-        var bubbleTop = bubble.parentElement.offsetTop;
-        var containerTop = self.messagesEl.scrollTop;
-        var headerOffset = 8; // small breathing room at top
-        var target = bubbleTop - headerOffset;
+        var msgEl = bubble.parentElement; // .stlr-msg wrapper
+        // Find the preceding user message to include it in view
+        var userMsg = msgEl.previousElementSibling;
+        var scrollTarget = userMsg || msgEl;
+        var target = scrollTarget.offsetTop - 12; // 12px breathing room
 
-        // Only scroll up if the response top is above the current viewport
-        // or smoothly scroll to show it
         var current = self.messagesEl.scrollTop;
-        var diff = Math.abs(target - current);
-        if (diff > 30) {
+        if (Math.abs(target - current) > 20) {
           self.messagesEl.scrollTo({ top: target, behavior: "smooth" });
         }
       });
