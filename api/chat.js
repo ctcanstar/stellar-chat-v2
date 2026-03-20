@@ -1,6 +1,6 @@
 const { GoogleGenAI } = require("@google/genai");
 
-const MODEL = "gemini-3.0-flash";
+const MODEL = "gemini-3-flash-preview";
 const MAX_MESSAGES = 50;
 const MAX_PRODUCT_DATA_LENGTH = 50000;
 
