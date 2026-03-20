@@ -1025,8 +1025,11 @@
     this._drainMsgId = assistantId;
     this._startDrain();
 
-    // Re-render to show user message + loading
+    // Re-render to show user message + loading, then snap scroll instantly
     this.renderPanel();
+    if (this.messagesEl) {
+      this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
+    }
 
     // Prepare API messages (exclude welcome and empty assistant placeholder)
     var apiMessages = this.messages
