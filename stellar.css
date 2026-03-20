@@ -17,6 +17,13 @@
   right: 0;
 }
 
+/* Houdini custom property for smooth angle interpolation */
+@property --stlr-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
 /* Floating button */
 .stlr-btn {
   position: fixed !important;
@@ -25,19 +32,58 @@
   width: 56px !important;
   height: 56px !important;
   border-radius: 50% !important;
-  background: #007580 !important;
-  border: none !important;
+  border: 3px solid transparent !important;
   cursor: pointer !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  box-shadow: 0 10px 25px -5px rgba(0,0,0,.25), 0 8px 10px -6px rgba(0,0,0,.1) !important;
-  transition: all .2s !important;
   z-index: 2147483647 !important;
+  /* Dual-background: solid interior (padding-box) + animated conic gradient (border-box) */
+  background:
+    linear-gradient(#007580, #007580) padding-box,
+    conic-gradient(
+      from var(--stlr-angle),
+      #007580 0deg,
+      #4dd9e6 60deg,
+      #a8edea 120deg,
+      #ffffff 180deg,
+      #a8edea 240deg,
+      #4dd9e6 300deg,
+      #007580 360deg
+    ) border-box !important;
+  background-origin: padding-box, border-box !important;
+  box-shadow:
+    0 10px 25px -5px rgba(0,0,0,.25),
+    0 8px 10px -6px rgba(0,0,0,.1) !important;
+  animation: stlr-spin 3s linear infinite !important;
+  transition: transform .2s, box-shadow .2s !important;
+}
+/* Outer glow pseudo-element */
+.stlr-btn::before {
+  content: "" !important;
+  position: absolute !important;
+  inset: -4px !important;
+  border-radius: 50% !important;
+  background: conic-gradient(
+    from var(--stlr-angle),
+    transparent 0deg,
+    rgba(77, 217, 230, 0.4) 90deg,
+    transparent 180deg,
+    rgba(77, 217, 230, 0.25) 270deg,
+    transparent 360deg
+  ) !important;
+  filter: blur(8px) !important;
+  z-index: -1 !important;
+  animation: stlr-spin 3s linear infinite !important;
+}
+@keyframes stlr-spin {
+  to { --stlr-angle: 360deg; }
 }
 .stlr-btn:hover {
-  background: #00525A !important;
-  transform: scale(1.05) !important;
+  transform: scale(1.08) !important;
+  box-shadow:
+    0 10px 30px -5px rgba(0,117,128,.4),
+    0 8px 15px -6px rgba(0,0,0,.15) !important;
 }
 .stlr-btn svg {
   width: 28px !important;
