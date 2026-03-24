@@ -668,7 +668,7 @@
     var self = this;
     btn.onclick = function () {
       self.isOpen = true;
-      if (typeof hj === "function") hj("event", "stellar_chat_opened");
+      if (typeof window.hj === "function") window.hj("event", "stellar_chat_opened");
       self.renderButton();
     };
     this.root.appendChild(btn);
@@ -700,7 +700,7 @@
       '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>';
     closeBtn.onclick = function () {
       self.isOpen = false;
-      if (typeof hj === "function") hj("event", "stellar_chat_closed");
+      if (typeof window.hj === "function") window.hj("event", "stellar_chat_closed");
       self.renderButton();
     };
     header.appendChild(closeBtn);
@@ -1009,7 +1009,7 @@
 
   StellarChat.prototype.sendMessage = function (content) {
     var self = this;
-    if (typeof hj === "function") hj("event", "stellar_message_sent");
+    if (typeof window.hj === "function") window.hj("event", "stellar_message_sent");
 
     var userMsg = { id: String(++nextMsgId), role: "user", content: content };
     this.messages.push(userMsg);
