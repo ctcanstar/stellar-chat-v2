@@ -21,7 +21,7 @@ function getClient(apiKey) {
 // ============================================================
 // SUPABASE LOGGING (fire-and-forget)
 // ============================================================
-function logToSupabase(userMessage, messageCount, userAgent) {
+function logToSupabase(userMessage, messageCount, userAgent, response) {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY;
   if (!url || !key) return;
@@ -38,6 +38,7 @@ function logToSupabase(userMessage, messageCount, userAgent) {
       prompt: userMessage,
       message_count: messageCount,
       user_agent: userAgent,
+      response: response || null,
     }),
   }).catch((err) => {
     console.error("[Stellar Logging] Supabase error:", err.message);
@@ -136,15 +137,12 @@ module.exports = async function handler(req, res) {
       `| prompt: ${userPrompt}`
     );
 
-    // Fire-and-forget to Supabase (non-blocking)
-    logToSupabase(userPrompt, messages.length, userAgent);
-
     const ai = getClient(apiKey);
 
     // Map Claude's message format to Gemini's format
     const geminiMessages = messages.map((m) => ({
       // Gemini uses 'model' instead of 'assistant'
-      role: m.role === "assistant" ? "model" : "user", 
+      role: m.role === "assistant" ? "model" : "user",
       parts: [{ text: String(m.content || "") }],
     }));
 
@@ -164,14 +162,19 @@ module.exports = async function handler(req, res) {
       }
     });
 
+    let fullResponse = "";
     for await (const chunk of responseStream) {
       if (chunk.text) {
+        fullResponse += chunk.text;
         res.write(`data: ${JSON.stringify({ text: chunk.text })}\n\n`);
       }
     }
 
     res.write("data: [DONE]\n\n");
     res.end();
+
+    // Log prompt + response to Supabase after stream completes (fire-and-forget)
+    logToSupabase(userPrompt, messages.length, userAgent, fullResponse);
  } catch (error) {
     console.error("Stream error:", error);
     
