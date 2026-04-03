@@ -170,11 +170,11 @@ module.exports = async function handler(req, res) {
       }
     }
 
+    // Log prompt + response to Supabase before ending (Vercel may kill the function after res.end)
+    logToSupabase(userPrompt, messages.length, userAgent, fullResponse);
+
     res.write("data: [DONE]\n\n");
     res.end();
-
-    // Log prompt + response to Supabase after stream completes (fire-and-forget)
-    logToSupabase(userPrompt, messages.length, userAgent, fullResponse);
  } catch (error) {
     console.error("Stream error:", error);
     
